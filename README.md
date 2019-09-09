@@ -69,7 +69,7 @@ Requirements:
 6. Build and run
 
 ## About Humboldt Forum
-[Humboldt Forum]() is Berlin's new museum, residing in the reconstructed Berlin Palace and set to open late 2019/early 2020.
+[Humboldt Forum](https://www.humboldtforum.org/en) is a new museum in Berlin, residing in the reconstructed Berlin Palace and set to open late 2019/early 2020.
 
 ## About Augmenting the Gallery
 NYU Berlin spring 2019 course by Pierre Depaz. [Course repo](https://github.com/periode/augmenting-gallery)
