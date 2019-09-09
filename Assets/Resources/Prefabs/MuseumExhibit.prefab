@@ -279,7 +279,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 70, y: 5}
+  m_SizeDelta: {x: 76.5245, y: 5}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!23 &8688510281847245289
 MeshRenderer:
@@ -298,7 +298,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 21101055354879508, guid: 7f8a5609d975c4f3ca9df08e880a6804, type: 2}
+  - {fileID: 21850906707086490, guid: 562385dcb29134233893f2147c84d616, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -356,8 +356,8 @@ MonoBehaviour:
       Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
   m_text: Lorem ipsum dolor sit amet
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 7f8a5609d975c4f3ca9df08e880a6804, type: 2}
-  m_sharedMaterial: {fileID: 21101055354879508, guid: 7f8a5609d975c4f3ca9df08e880a6804,
+  m_fontAsset: {fileID: 11400000, guid: 562385dcb29134233893f2147c84d616, type: 2}
+  m_sharedMaterial: {fileID: 21850906707086490, guid: 562385dcb29134233893f2147c84d616,
     type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}

@@ -522,7 +522,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 21220803772936256, guid: 3ff54656a564e41c58eaef46ed5b523f, type: 2}
+  - {fileID: 21078061823671680, guid: 4bcdeab65cb71455db9dd442245414a0, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -580,8 +580,8 @@ MonoBehaviour:
       Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
   m_text: Sample text
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 3ff54656a564e41c58eaef46ed5b523f, type: 2}
-  m_sharedMaterial: {fileID: 21220803772936256, guid: 3ff54656a564e41c58eaef46ed5b523f,
+  m_fontAsset: {fileID: 11400000, guid: 4bcdeab65cb71455db9dd442245414a0, type: 2}
+  m_sharedMaterial: {fileID: 21078061823671680, guid: 4bcdeab65cb71455db9dd442245414a0,
     type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
@@ -625,7 +625,7 @@ MonoBehaviour:
   m_enableWordWrapping: 1
   m_wordWrappingRatios: 0.4
   m_overflowMode: 1
-  m_firstOverflowCharacterIndex: -1
+  m_firstOverflowCharacterIndex: 0
   m_linkedTextComponent: {fileID: 0}
   m_isLinkedTextComponent: 0
   m_isTextTruncated: 0
@@ -648,13 +648,13 @@ MonoBehaviour:
   m_margin: {x: 0, y: 0, z: 0, w: 0}
   m_textInfo:
     textComponent: {fileID: 1604815139541946411}
-    characterCount: 11
+    characterCount: 0
     spriteCount: 0
-    spaceCount: 1
-    wordCount: 2
+    spaceCount: 0
+    wordCount: 0
     linkCount: 0
-    lineCount: 1
-    pageCount: 1
+    lineCount: 0
+    pageCount: 0
     materialCount: 1
   m_havePropertiesChanged: 0
   m_isUsingLegacyAnimationComponent: 0
@@ -821,7 +821,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 21220803772936256, guid: 3ff54656a564e41c58eaef46ed5b523f, type: 2}
+  - {fileID: 21078061823671680, guid: 4bcdeab65cb71455db9dd442245414a0, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -879,8 +879,8 @@ MonoBehaviour:
       Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
   m_text: Destination
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 3ff54656a564e41c58eaef46ed5b523f, type: 2}
-  m_sharedMaterial: {fileID: 21220803772936256, guid: 3ff54656a564e41c58eaef46ed5b523f,
+  m_fontAsset: {fileID: 11400000, guid: 4bcdeab65cb71455db9dd442245414a0, type: 2}
+  m_sharedMaterial: {fileID: 21078061823671680, guid: 4bcdeab65cb71455db9dd442245414a0,
     type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
@@ -924,7 +924,7 @@ MonoBehaviour:
   m_enableWordWrapping: 1
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
-  m_firstOverflowCharacterIndex: -1
+  m_firstOverflowCharacterIndex: 0
   m_linkedTextComponent: {fileID: 0}
   m_isLinkedTextComponent: 0
   m_isTextTruncated: 0
@@ -1010,7 +1010,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: -0.00028403103, y: 0}
-  m_SizeDelta: {x: 7.8485, y: 1.5}
+  m_SizeDelta: {x: 10.6762, y: 1.5}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!23 &2801306391040204084
 MeshRenderer:
@@ -1029,7 +1029,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 21381876400470104, guid: 78d48bd9e76b547a3845d3e53ca6a640, type: 2}
+  - {fileID: 21771472606685542, guid: 5a2c5d5da2eff497f8496130fec7d940, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1087,8 +1087,8 @@ MonoBehaviour:
       Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
   m_text: "turn right \xBB"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 78d48bd9e76b547a3845d3e53ca6a640, type: 2}
-  m_sharedMaterial: {fileID: 21381876400470104, guid: 78d48bd9e76b547a3845d3e53ca6a640,
+  m_fontAsset: {fileID: 11400000, guid: 5a2c5d5da2eff497f8496130fec7d940, type: 2}
+  m_sharedMaterial: {fileID: 21771472606685542, guid: 5a2c5d5da2eff497f8496130fec7d940,
     type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
@@ -1121,7 +1121,7 @@ MonoBehaviour:
   m_fontSizeMin: 8
   m_fontSizeMax: 12
   m_fontStyle: 16
-  m_textAlignment: 258
+  m_textAlignment: 514
   m_isAlignmentEnumConverted: 1
   m_characterSpacing: 0
   m_wordSpacing: 0
@@ -1132,7 +1132,7 @@ MonoBehaviour:
   m_enableWordWrapping: 1
   m_wordWrappingRatios: 0.4
   m_overflowMode: 1
-  m_firstOverflowCharacterIndex: -1
+  m_firstOverflowCharacterIndex: 0
   m_linkedTextComponent: {fileID: 0}
   m_isLinkedTextComponent: 0
   m_isTextTruncated: 0
@@ -1155,13 +1155,13 @@ MonoBehaviour:
   m_margin: {x: 0, y: 0, z: 0, w: 0}
   m_textInfo:
     textComponent: {fileID: 5848925914801292772}
-    characterCount: 12
+    characterCount: 0
     spriteCount: 0
-    spaceCount: 2
-    wordCount: 2
+    spaceCount: 0
+    wordCount: 0
     linkCount: 0
-    lineCount: 1
-    pageCount: 1
+    lineCount: 0
+    pageCount: 0
     materialCount: 1
   m_havePropertiesChanged: 0
   m_isUsingLegacyAnimationComponent: 0
@@ -1237,7 +1237,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 21381876400470104, guid: 78d48bd9e76b547a3845d3e53ca6a640, type: 2}
+  - {fileID: 21771472606685542, guid: 5a2c5d5da2eff497f8496130fec7d940, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1295,8 +1295,8 @@ MonoBehaviour:
       Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
   m_text: "\xAB turn left"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 78d48bd9e76b547a3845d3e53ca6a640, type: 2}
-  m_sharedMaterial: {fileID: 21381876400470104, guid: 78d48bd9e76b547a3845d3e53ca6a640,
+  m_fontAsset: {fileID: 11400000, guid: 5a2c5d5da2eff497f8496130fec7d940, type: 2}
+  m_sharedMaterial: {fileID: 21771472606685542, guid: 5a2c5d5da2eff497f8496130fec7d940,
     type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
@@ -1329,7 +1329,7 @@ MonoBehaviour:
   m_fontSizeMin: 8
   m_fontSizeMax: 12
   m_fontStyle: 16
-  m_textAlignment: 258
+  m_textAlignment: 514
   m_isAlignmentEnumConverted: 1
   m_characterSpacing: 0
   m_wordSpacing: 0
@@ -1340,7 +1340,7 @@ MonoBehaviour:
   m_enableWordWrapping: 1
   m_wordWrappingRatios: 0.4
   m_overflowMode: 1
-  m_firstOverflowCharacterIndex: -1
+  m_firstOverflowCharacterIndex: 0
   m_linkedTextComponent: {fileID: 0}
   m_isLinkedTextComponent: 0
   m_isTextTruncated: 0
@@ -1363,13 +1363,13 @@ MonoBehaviour:
   m_margin: {x: 0, y: 0, z: 0, w: 0}
   m_textInfo:
     textComponent: {fileID: 5652590020384374187}
-    characterCount: 11
+    characterCount: 0
     spriteCount: 0
-    spaceCount: 2
-    wordCount: 2
+    spaceCount: 0
+    wordCount: 0
     linkCount: 0
-    lineCount: 1
-    pageCount: 1
+    lineCount: 0
+    pageCount: 0
     materialCount: 1
   m_havePropertiesChanged: 0
   m_isUsingLegacyAnimationComponent: 0
@@ -1590,7 +1590,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 21220803772936256, guid: 3ff54656a564e41c58eaef46ed5b523f, type: 2}
+  - {fileID: 21850906707086490, guid: 562385dcb29134233893f2147c84d616, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1648,8 +1648,8 @@ MonoBehaviour:
       Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
   m_text: Sample text
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 3ff54656a564e41c58eaef46ed5b523f, type: 2}
-  m_sharedMaterial: {fileID: 21220803772936256, guid: 3ff54656a564e41c58eaef46ed5b523f,
+  m_fontAsset: {fileID: 11400000, guid: 562385dcb29134233893f2147c84d616, type: 2}
+  m_sharedMaterial: {fileID: 21850906707086490, guid: 562385dcb29134233893f2147c84d616,
     type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
