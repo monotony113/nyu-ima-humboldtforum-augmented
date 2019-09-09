@@ -11,46 +11,41 @@ App prototyped in Unity. Requires an iOS device with ARKit 2+ support.
 
 ## Demo
 
+(If videos are not showing please turn to the repo's [GitHub Page](https://monotony113.github.io/nyu-ima-humboldtforum-augmented/))
+
 Initial screen:
 <video width="270" height="480" controls>
     <source src="demo/1-init.MP4" type="video/mp4">
-    Your browser/GitHub README does not support the video tag.
 </video>
 
 Filtering objects by topics:
 <video width="270" height="480" controls>
     <source src="demo/2-filter.MP4" type="video/mp4">
-    Your browser/GitHub README does not support the video tag.
 </video>
 
 Object descriptions:
 <video width="270" height="480" controls>
     <source src="demo/3-read-more.MP4" type="video/mp4">
-    Your browser/GitHub README does not support the video tag.
 </video>
 
 Simple direction indicator:
 <video width="270" height="480" controls>
     <source src="demo/4-navigation.MP4" type="video/mp4">
-    Your browser/GitHub README does not support the video tag.
 </video>
 
 Bookmarking:
 <video width="270" height="480" controls>
     <source src="demo/5-bookmark.MP4" type="video/mp4">
-    Your browser/GitHub README does not support the video tag.
 </video>
 
 Locating the user:
 <video width="270" height="480" controls>
     <source src="demo/6-location.MP4" type="video/mp4">
-    Your browser/GitHub README does not support the video tag.
 </video>
 
 Complete experience:
 <video width="270" height="480" controls>
     <source src="demo/7-flow.MP4" type="video/mp4">
-    Your browser/GitHub README does not support the video tag.
 </video>
 
 
