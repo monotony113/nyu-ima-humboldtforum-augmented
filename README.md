@@ -1,4 +1,4 @@
-### IMNY-9001 Augmenting the Gallery, NYU Berlin, 2019
+### IMNY-9001 Augmenting the Gallery, NYU Berlin, Spring 2019
 # Humboldt Forum Augmented
 
 An iOS AR app for indoor exploration in Humboldt Forum, a museum in Berlin, Germany.
@@ -8,6 +8,8 @@ It maps locations and exhibits in the museum onto the screen, provides basic des
 It locates the user in the library through various means, including motion tracking and the device's built-in compass. Making use of AR Image Anchors from ARKit, the prototype also attempts to locate the user through image recognition. Ideally, location info should be provided through external sensors like Wi-Fi beacons, Bluetooth, etc.
 
 App prototyped in Unity. Requires an iOS device with ARKit 2+ support.
+
+This repo is derived from the course final project, which was a group project with Ava, Sammy, and Angelica. 
 
 ## Demo
 
@@ -68,6 +70,7 @@ Requirements:
 
 ## About Augmenting the Gallery
 NYU Berlin spring 2019 course by Pierre Depaz. [Course repo](https://github.com/periode/augmenting-gallery)
+
 
 <style>
     video {
