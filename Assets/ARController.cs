@@ -1,300 +1,342 @@
-﻿/*
-Copyright 2019 Tony Wu
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
-
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEngine;
-using UnityEngine.XR.iOS;
+using UnityEngine.UI;
 using TMPro;
 
 public class ARController : MonoBehaviour
 {
 
-    private GameObject camera;
+    public GameObject cameraParent;
 
-    private GameObject origin;
-    private GameObject[] floors = new GameObject[4];
+    public GameObject museumEnvironment;
 
-    private string currentRoom;
+    public GameObject defaultCamLocation;
+    public GameObject museumLocationService;
 
-    private GameObject indicatorPrefab;
-    private GameObject signPrefab;
-    private GameObject envLayer;
-    private GameObject objLayer;
-    private GameObject augLayer;
-    private GameObject augField;
-    private GameObject canvas;
+    private GameObject augmentationPlane;
 
-    private string[] filters = { "Floors", "Highlights", "CreaturesInCulture", "Power", "TechnoCulture" };
-    private int filterPos = 0;
+    public GameObject screens;
+    public GameObject floorNav;
 
-    private Dictionary<string, GameObject> museumObjectsGO = new Dictionary<string, GameObject>();
-    private Dictionary<string, GameObject> museumSignsGO = new Dictionary<string, GameObject>();
+    private GameObject inquiryModule;
+    private TMP_Dropdown topicDropdown;
+    private TMP_Dropdown exhibitDropdown;
+    private TMP_Dropdown.OptionData bookmarkOption = new TMP_Dropdown.OptionData("My Bookmarks");
+
+    public GameObject debugOut;
+    private static GameObject debugOutStatic;
+
+    public static bool cameraMoving;
+
+    private MuseumObjectRep inquiredMuseumObject;
 
     // Start is called before the first frame update
     void Start()
     {
-        origin = transform.Find("Origin").gameObject;
+        museumEnvironment.SetActive(false);
 
-        origin.transform.position = CommandCenter.currentLocation;
-        RelocalizeMuseum(origin.transform);
+        InstantiateMO(CommandCenter.museumObjects.Values.ToList(), museumEnvironment.transform);
+        OrganizeMuseumSpaces(CommandCenter.museumObjects.Values.Where(m => m.type == "space" || m.type == "place").ToList(), museumEnvironment.transform);
 
-        indicatorPrefab = Resources.Load<GameObject>("Prefabs/MuseumObjectIndicator");
-        signPrefab = Resources.Load<GameObject>("Prefabs/MuseumObjectSign");
+        var frustumHeight = 2.0f * 10 * Mathf.Tan(Camera.main.fieldOfView * 0.5f * Mathf.Deg2Rad) + 1f;
+        var frustumWidth = frustumHeight * Camera.main.aspect;
+        augmentationPlane = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        augmentationPlane.name = "AugmentationPlane";
+        augmentationPlane.transform.localScale = new Vector3(frustumWidth * 1.1f, frustumHeight * 1.1f, 1);
+        augmentationPlane.transform.SetParent(museumEnvironment.transform);
+        augmentationPlane.layer = 12;
+        augmentationPlane.GetComponent<MeshCollider>().convex = true;
+        augmentationPlane.GetComponent<Renderer>().enabled = false;
+        //augmentationPlane.AddComponent<ReverseNormals>();
 
-        envLayer = transform.Find("Environment").gameObject;
-        objLayer = transform.Find("Objects").gameObject;
-        augLayer = transform.Find("Augmentation").gameObject;
-        canvas = transform.Find("Canvas").gameObject;
+        topicDropdown = screens.transform.Find("Topic").GetComponent<TMP_Dropdown>();
+        topicDropdown.ClearOptions();
+        topicDropdown.AddOptions(CommandCenter.museumThreads.Keys.ToList());
 
-        augField = Instantiate(Resources.Load<GameObject>("Prefabs/AugmentationField"));
-        augField.name = "AugmentationField";
-        augField.transform.parent = augLayer.transform;
+        exhibitDropdown = screens.transform.Find("Exhibit").GetComponent<TMP_Dropdown>();
+        exhibitDropdown.ClearOptions();
 
-        for (int i = 0; i < 4; i++)
-        {
-            floors[i] = transform.Find("Environment/BerlinerSchlossFloors/F" + i.ToString()).gameObject;
-        }
+        inquiryModule = screens.transform.Find("Inquiry").gameObject;
 
-        camera = transform.Find("CameraParent/Main Camera").gameObject;
+        museumLocationService.GetComponent<MuseumLocationService>().UpdateLocationEvent += UpdateLocation;
 
-        PlaceMuseumObjects(CommandCenter.museumObjects);
+        floorNav.transform.parent = museumEnvironment.transform;
 
-        envLayer.SetActive(false);
-        objLayer.SetActive(false);
-        augLayer.SetActive(false);
+        debugOutStatic = debugOut;
+
+        Input.location.Start();
 
         StartCoroutine(DemonstrationInitialScreen());
     }
 
-    private IEnumerator DemonstrationInitialScreen()
+    private void InstantiateMO(List<MuseumObjectRep> mObjs, Transform parent)
     {
-        canvas.transform.Find("Status/Text").gameObject.GetComponent<TextMeshProUGUI>().text = "Acquiring location...";
-        canvas.transform.Find("Topic").gameObject.SetActive(false);
-        canvas.transform.Find("Alert/Text").gameObject.GetComponent<TextMeshProUGUI>().text = "Please slowly move your phone around...";
-        canvas.transform.Find("Controls").gameObject.SetActive(false);
-        yield return new WaitForSeconds(5);
-        canvas.transform.Find("Status/Text").gameObject.GetComponent<TextMeshProUGUI>().text = "First floor, Foyer";
-        canvas.transform.Find("Topic").gameObject.SetActive(true);
-        //canvas.transform.Find("Alert").gameObject.SetActive(false);
-        canvas.transform.Find("Controls").gameObject.SetActive(true);
-        augLayer.SetActive(true);
-        canvas.transform.Find("Alert/Text").gameObject.GetComponent<TextMeshProUGUI>().text = "Please scan around with your phone";
-        yield return new WaitForSeconds(3);
-        canvas.transform.Find("Alert").gameObject.SetActive(false);
+       foreach (MuseumObjectRep mObj in mObjs) if (!mObj.GO) { mObj.InstantiateGO(parent); }
     }
-
-    public void DemonstrationRelocalize(string place)
+    private void OrganizeMuseumSpaces(List<MuseumObjectRep> mObjs, Transform parent)
     {
-        if (currentRoom == place) { return; }
-        Vector4 newMuseumLocation = CommandCenter.museumObjects[place].location;
-        CommandCenter.currentLocation = newMuseumLocation;
-
-        Vector3 reverseTranslation = camera.transform.position - objLayer.transform.Find(place).position;
-        //origin.transform.position = objLayer.transform.Find(place).position;
-        //RelocalizeMuseum(origin.transform);
-        origin.transform.Translate(reverseTranslation, Space.World);
-        envLayer.transform.Translate(reverseTranslation, Space.World);
-        objLayer.transform.Translate(reverseTranslation, Space.World);
-        augLayer.transform.Translate(reverseTranslation, Space.World);
-        currentRoom = place;
-
-        switch (place)
+        foreach (MuseumObjectRep mObj in mObjs)
         {
-            case "room.0":
-                canvas.transform.Find("Status/Text").gameObject.GetComponent<TextMeshProUGUI>().text = "Foyer";
-                break;
-            case "room.114":
-                canvas.transform.Find("Status/Text").gameObject.GetComponent<TextMeshProUGUI>().text = "Humboldt Forum Academy";
-                break;
-            case "room.206":
-                canvas.transform.Find("Status/Text").gameObject.GetComponent<TextMeshProUGUI>().text = "Ethnologisches Museum - America";
-                break;
-            case "room.300":
-                canvas.transform.Find("Status/Text").gameObject.GetComponent<TextMeshProUGUI>().text = "3rd Floor";
-                break;
-        }
-    }
-    public void DemonstrationChangeTopic(int step)
-    {
-        filterPos += step;
-        if (filterPos == filters.Length) { filterPos = 0; return; }
-        if (filterPos == -1) { filterPos = filters.Length - 1; return; }
-    }
-    private void RelocalizeMuseum(Transform newTransform)
-    {
-        UnityARSessionNativeInterface.GetARSessionNativeInterface().SetWorldOrigin(newTransform);
-    }
-    private void PlaceMuseumObjects(Dictionary<string, CommandCenter.MuseumObject> museumObjs)
-    {
-        foreach (CommandCenter.MuseumObject museumObject in museumObjs.Values)
-        {
-            GameObject indicator = Instantiate(indicatorPrefab);
-            indicator.name = museumObject.id;
-            indicator.transform.parent = objLayer.transform;
-            GameObject floor = floors[(int)museumObject.location.y];
-            indicator.transform.position = new Vector3(museumObject.location.x * floor.GetComponent<Renderer>().bounds.size.x * 10,
-                                                       floor.transform.position.y + 0.3f,
-                                                       -museumObject.location.z * floor.GetComponent<Renderer>().bounds.size.z * 10);
-
-            indicator.transform.localScale = new Vector3(3, 3, 3);
-            CommandCenter.ChangeColor(indicator, museumObject.color);
-
-            museumObjectsGO.Add(museumObject.id, indicator);
-
-            GameObject sign = Instantiate(signPrefab);
-            sign.name = museumObject.id;
-            sign.transform.parent = augLayer.transform;
-
-            GameObject largeCylinder = sign.transform.Find("LCylinder").gameObject;
-            GameObject billboard = sign.transform.Find("LabelBoard").gameObject;
-            TextMeshPro label = sign.transform.Find("Label").GetComponent<TextMeshPro>();
-
-            Vector3 oldScale = billboard.gameObject.transform.localScale;
-
-            label.text = museumObject.name;
-            label.ForceMeshUpdate();
-
-            CommandCenter.ChangeColor(largeCylinder, museumObject.color);
-            CommandCenter.ChangeColor(billboard, museumObject.color);
-            billboard.transform.localScale = new Vector3(label.GetRenderedValues().x / 6 + 0.25f, oldScale.y, oldScale.z);
-            billboard.transform.position = largeCylinder.transform.position;
-            billboard.transform.Translate(billboard.transform.localScale.x / 2 + 0.1f, 0, 0);
-
-            museumSignsGO.Add(museumObject.id, sign);
-        }
-    }
-
-    public void RandomizeLocations()
-    {
-        foreach (KeyValuePair<string, GameObject> museumObj in museumObjectsGO)
-        {
-            if (CommandCenter.museumObjects[museumObj.Key].type != "place")
+            foreach (string child in mObj.relationship["children"].AsArray.Values)
             {
-                museumObj.Value.transform.position = new Vector3(CommandCenter.museumLength * Random.Range(0f, 1f), 5 * Random.Range(0, 4), CommandCenter.museumWidth * Random.Range(0f, 1f));
+                var childTransform = parent.Find(child);
+                if (childTransform)
+                {
+                    childTransform.parent = mObj.GO.transform;
+                }
             }
         }
     }
-
-    private void RepositionAndFaceCamera(GameObject GO, Vector3 position)
+    private void FilterMuseumObjects(string thread)
     {
-        GO.transform.position = position;
-        GO.transform.LookAt(camera.transform);
-        GO.transform.Rotate(Vector3.right, -90 - GO.transform.rotation.eulerAngles.x);
-        GO.transform.Rotate(Vector3.up, 180);
-    }
-    // Update is called once per frame
-    void Update()
-    {
-        augField.transform.position = camera.transform.position;
-
-        canvas.transform.Find("Topic/Text").gameObject.GetComponent<TextMeshProUGUI>().text = filters[filterPos];
-        int r = 0;
-        foreach (KeyValuePair<string, GameObject> museumObj in museumObjectsGO)
+        foreach (MuseumObjectRep m in CommandCenter.museumObjects.Values)
         {
-            string mKey = museumObj.Key;
-            GameObject mObjGO = museumObj.Value;
-            GameObject mSignGO = museumSignsGO[mKey];
-
-            switch (filters[filterPos])
+            if (CommandCenter.museumThreads[thread].Contains(m))
             {
-                case "Floors":
-                    if (CommandCenter.museumObjects[mKey].type != "place") { mSignGO.SetActive(false); continue; }
-                    break;
-                case "Highlights":
-                    if (CommandCenter.museumObjects[mKey].exhibitions == null || !CommandCenter.museumObjects[mKey].exhibitions.Contains("HFHighlights")) { mSignGO.SetActive(false); continue; }
-                    break;
-                case "CreaturesInCulture":
-                case "Power":
-                case "TechnoCulture":
-                    if (CommandCenter.museumObjects[mKey].themes == null || !CommandCenter.museumObjects[mKey].themes.Contains(filters[filterPos])) { mSignGO.SetActive(false); continue; }
-                    break;
-            }
-            r++;
-
-            float mObjFloor = CommandCenter.museumObjects[museumObj.Key].location.y;
-            float mObjRoom = CommandCenter.museumObjects[museumObj.Key].location.w;
-            float currentFloor = CommandCenter.currentLocation.y;
-            float currentRoomNum = CommandCenter.currentLocation.w;
-            int heightModifier;
-            if ((int)currentFloor == (int)mObjFloor)
-            {
-                heightModifier = 0;
-            }
-            else if (currentFloor > mObjFloor)
-            {
-                heightModifier = 1;
+                m.included = true;
             }
             else
             {
-                heightModifier = -1;
-            }
-
-            if (Vector3.Distance(camera.transform.position, mObjGO.transform.position) < 0.1)
-            {
-                mSignGO.SetActive(false);
-                continue;
-            }
-            mSignGO.SetActive(true);
-            if (Vector3.Distance(camera.transform.position, new Vector3(mObjGO.transform.position.x, camera.transform.position.y, mObjGO.transform.position.z)) < 30)
-            {
-                if ((int) currentFloor == (int)mObjFloor) {
-                    mSignGO.transform.Find("LCylinder").gameObject.SetActive(true);
-                    mSignGO.transform.Find("SCylinder").gameObject.SetActive(true);
-                    RepositionAndFaceCamera(mSignGO, mObjGO.transform.position);
-                    mSignGO.transform.localScale = new Vector3(0.6f, 1, 0.6f);
-                } else
-                {
-                    RepositionAndFaceCamera(mSignGO, new Vector3(mObjGO.transform.position.x, camera.transform.position.y + -7.5f * heightModifier + -1.5f * (r % 4), mObjGO.transform.position.z));
-                }
-            }
-            else if (Physics.Linecast(mObjGO.transform.position, camera.transform.position, out RaycastHit hitInfo) && hitInfo.collider.transform.parent.name == "AugmentationField")
-            {
-                RepositionAndFaceCamera(mSignGO, new Vector3(hitInfo.point.x, camera.transform.position.y + -7.5f * heightModifier + -1.5f * (r % 4), hitInfo.point.z));
-                //if (hitInfo.distance > 40)
-                //{
-                //    mSignGO.transform.Translate(0, 10, 0);
-                //} else if (hitInfo.distance > 20)
-                //{
-                //    mSignGO.transform.Translate(0, (hitInfo.distance - 20) / 20 * 10, 0);
-                //}
-                mSignGO.transform.localScale = new Vector3(2, 1, 2);
-                mSignGO.transform.Find("LCylinder").gameObject.SetActive(false);
-                mSignGO.transform.Find("SCylinder").gameObject.SetActive(false);
-            }
-
-            switch (heightModifier)
-            {
-                case 1:
-                    mSignGO.transform.Find("ArrowUp").gameObject.SetActive(false);
-                    mSignGO.transform.Find("ArrowDown").gameObject.SetActive(true);
-                    break;
-                case -1:
-                    mSignGO.transform.Find("ArrowUp").gameObject.SetActive(true);
-                    mSignGO.transform.Find("ArrowDown").gameObject.SetActive(false);
-                    break;
-                case 0:
-                    mSignGO.transform.Find("ArrowUp").gameObject.SetActive(false);
-                    mSignGO.transform.Find("ArrowDown").gameObject.SetActive(false);
-                    break;
+                m.included = false;
             }
         }
 
-        //Transform foundFriedrichIII = transform.Find("FriedrichIII");
-
-        //if (foundFriedrichIII)
-        //{
-        //    currentRoom = "room.300";
-        //    DemonstrationRelocalize("room.300");
-        //    transform.Find("Augmentation/1961.1.1").Translate(0, 1, 0);
-        //}
-
+        exhibitDropdown.ClearOptions();
+        exhibitDropdown.AddOptions(CommandCenter.museumThreads[thread].Select(m => m.name).ToList());
+        UpdateFloorNav(exhibitDropdown.value);
     }
+
+    // Update is called once per frame
+    void Update()
+    {
+        museumEnvironment.transform.rotation = Quaternion.Euler(0, -Input.compass.trueHeading, 0);
+        //ScreenDebug(gameObject, museumEnvironment.transform.rotation.eulerAngles.ToString());
+        //augmentationPlane.transform.LookAt(Camera.main.transform.position);
+        augmentationPlane.transform.position = Camera.main.transform.position + Camera.main.transform.forward * 10;
+        augmentationPlane.transform.rotation = Camera.main.transform.rotation;
+
+        floorNav.transform.position = Camera.main.transform.position - Vector3.up * 1f;
+
+        if (CommandCenter.museumThreads["My Bookmarks"].Count == 0)
+        {
+            topicDropdown.options.RemoveAll(d => d.text == "My Bookmarks");
+        } else if (!topicDropdown.options.Contains(bookmarkOption))
+        {
+            topicDropdown.options.Add(bookmarkOption);
+        }
+
+        if (cameraMoving)
+        {
+            UpdateScreenText("Status/Text", "Relocating...");
+        }
+        else
+        {
+            if (CommandCenter.currentLocation != "")
+            {
+                UpdateScreenText("Status/Text", CommandCenter.museumObjects[CommandCenter.currentLocation].desc);
+            }
+            else
+            {
+                UpdateScreenText("Status/Text", "Outside museum!");
+            }
+        }
+
+        foreach (MuseumObjectRep m in CommandCenter.museumObjects.Values.Where(m => m.type == "exhibit"))
+        {
+            m.sameRoomAsCamera = m.room == CommandCenter.currentLocation;
+        }
+
+        if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out RaycastHit hit, Mathf.Infinity, 1 << 10))
+        {
+            inquiredMuseumObject = hit.collider.gameObject.GetComponentInParent<MuseumObjectController>().metadata;
+            if (CommandCenter.museumThreads["My Bookmarks"].Contains(inquiredMuseumObject))
+            {
+                inquiryModule.transform.Find("Button-AddBookmark").gameObject.SetActive(false);
+                inquiryModule.transform.Find("Button-DeleteBookmark").gameObject.SetActive(true);
+            } else
+            {
+                inquiryModule.transform.Find("Button-AddBookmark").gameObject.SetActive(true);
+                inquiryModule.transform.Find("Button-DeleteBookmark").gameObject.SetActive(false);
+            }
+            inquiryModule.SetActive(true);
+        } else
+        {
+            inquiredMuseumObject = null;
+            inquiryModule.SetActive(false);
+        }
+
+        //ScreenDebug(gameObject, EnumerateTransform(museumLocationService.transform, museumLocationService.name + "/", 0, 3));
+    }
+
+    public void RelocateCamera(Transform t)
+    {
+        cameraParent.transform.position = t.position;
+        Camera.main.transform.localPosition = Vector3.zero;
+    }
+    public void RelocateCamera(Vector3 v, bool normalized = false)
+    {
+        cameraParent.transform.position = normalized ? CommandCenter.DenormalizedMuseumVectors(v, true) : v;
+        Camera.main.transform.localPosition = Vector3.zero;
+    }
+    public void MoveCamera(string direction)
+    {
+        Vector3 newPosition = cameraParent.transform.position;
+        Vector3 oldPosition = cameraParent.transform.position;
+
+        switch(direction)
+        {
+            case "W":
+                newPosition += Vector3.Scale(Camera.main.transform.forward, new Vector3(1, 0, 1)) * 3;
+                StartCoroutine(Alert("Moving 3m forward", 2));
+                break;
+            case "A":
+                newPosition += Vector3.Scale(Camera.main.transform.right, new Vector3(1, 0, 1)) * -3;
+                StartCoroutine(Alert("Moving 3m left", 2));
+                break;
+            case "S":
+                newPosition += Vector3.Scale(Camera.main.transform.forward, new Vector3(1, 0, 1)) * -3;
+                StartCoroutine(Alert("Moving 3m backward", 2));
+                break;
+            case "D":
+                newPosition += Vector3.Scale(Camera.main.transform.right, new Vector3(1, 0, 1)) * 3;
+                StartCoroutine(Alert("Moving 3m right", 2));
+                break;
+            case "E":
+                newPosition += CommandCenter.DenormalizedMuseumVectors(new Vector3(0f, 0.25f, 0f), false);
+                StartCoroutine(Alert("Moving up 1 floor", 2));
+                break;
+            case "C":
+                newPosition += CommandCenter.DenormalizedMuseumVectors(new Vector3(0f, -0.25f, 0f), false);
+                StartCoroutine(Alert("Moving down 1 floor", 2));
+                break;
+        }
+
+        StartCoroutine(InterpolateCamera(oldPosition, newPosition, 60));
+    }
+    private IEnumerator InterpolateCamera(Vector3 start, Vector3 end, int frames)
+    {
+        cameraMoving = true;
+        for (int i = 1; i <= frames; i++)
+        {
+            RelocateCamera(Vector3.Lerp(start, end, i / (float)frames));
+            yield return null;
+        }
+        cameraMoving = false;
+    }
+
+    internal void UpdateLocation(object sender, EventMessage e)
+    {
+        string exhibitId = e.msg;
+        if (!CommandCenter.museumObjects.TryGetValue(exhibitId, out MuseumObjectRep m)) return;
+
+        Vector3 cameraHeading = Vector3.Scale(Camera.main.transform.forward, new Vector3(1, 0, 1));
+        Vector3 newPosition = m.GO.transform.position - cameraHeading * 0.3f;
+
+        StartCoroutine(InterpolateCamera(cameraParent.transform.position, newPosition, 60));
+    }
+
+    private void UpdateScreenText(string path, string text)
+    {
+        screens.transform.Find(path).gameObject.GetComponent<TextMeshProUGUI>().text = text;
+    }
+    private IEnumerator Alert(string msg, float t)
+    {
+        ToggleScreenElementVisible("Alert");
+        UpdateScreenText("Alert/Text", msg);
+        yield return new WaitForSeconds(t);
+        ToggleScreenElementVisible("Alert", false);
+    }
+    private void ToggleScreenElementVisible(string path, bool visible = true)
+    {
+        screens.transform.Find(path).gameObject.SetActive(visible);
+    }
+
+    public void Bookmark(bool add)
+    {
+        if (add)
+        {
+            CommandCenter.museumThreads["My Bookmarks"].Add(inquiredMuseumObject);
+        } else
+        {
+            CommandCenter.museumThreads["My Bookmarks"].Remove(inquiredMuseumObject);
+            FilterMuseumObjects(topicDropdown.captionText.text);
+        }
+    }
+    public void ShowDescription(bool visible)
+    {
+        if (visible) UpdateScreenText("Desc/Text", inquiredMuseumObject.desc);
+        ToggleScreenElementVisible("Desc", visible);
+    }
+    public void ShowMovementControl(bool visible)
+    {
+        ToggleScreenElementVisible("Controls/Simulation", visible);
+    }
+    public void UpdateMuseumObjectFilter(int o)
+    {
+        string thread = topicDropdown.options[o].text;
+        if (CommandCenter.museumThreads[thread] != null) FilterMuseumObjects(thread);
+    }
+    public void UpdateFloorNav(int o)
+    {
+        string thread = topicDropdown.captionText.text;
+        if (CommandCenter.museumThreads.TryGetValue(thread, out List<MuseumObjectRep> t) && t.Count > 0)
+        {
+            MuseumObjectRep m = CommandCenter.museumThreads[thread][o];
+            MuseumObjectRep r = CommandCenter.museumObjects[m.room];
+
+            floorNav.GetComponent<FloorNavController>().m = m;
+            floorNav.GetComponent<FloorNavController>().r = r;
+        } else
+        {
+            floorNav.GetComponent<FloorNavController>().m = null;
+            floorNav.GetComponent<FloorNavController>().r = null;
+        }
+    }
+
+    private IEnumerator DemonstrationInitialScreen()
+    {
+        UpdateScreenText("Status/Text", "Acquiring location...");
+        ToggleScreenElementVisible("Topic", false);
+        ToggleScreenElementVisible("Exhibit", false);
+        UpdateScreenText("Alert/Text", "Please slowly move your phone around...");
+        ToggleScreenElementVisible("Controls/Options", false);
+        RelocateCamera(defaultCamLocation.transform.position);
+
+        yield return new WaitForSeconds(5);
+
+        museumEnvironment.SetActive(true);
+        ToggleScreenElementVisible("Topic");
+        ToggleScreenElementVisible("Exhibit");
+        ToggleScreenElementVisible("Controls/Options");
+        UpdateScreenText("Alert/Text", "Location acquired");
+
+        FilterMuseumObjects("Museum Navigation");
+        topicDropdown.RefreshShownValue();
+        yield return new WaitForSeconds(3);
+
+        floorNav.SetActive(true);
+        ToggleScreenElementVisible("Alert", false);
+    }
+
+    private string EnumerateTransform(Transform t, string basePath, int currentLevel = 0, int maxLevel = 1000)
+    {
+        if (currentLevel >= maxLevel) return "";
+        string output = "";
+        foreach (Transform c in t)
+        {
+            string newLn = c.gameObject.activeSelf + ", " + basePath + c.name + "/";
+            output += newLn + "\n";
+            output += EnumerateTransform(c, newLn, currentLevel + 1, maxLevel);
+        }
+        return output;
+    }
+    public static void ScreenDebug(GameObject o, string msg)
+    {
+        debugOutStatic.GetComponent<TextMeshProUGUI>().text = Mathf.Round(Time.time * 1000) / 1000 + (o != null ? " " + o.name + " " : "") + "\n";
+        debugOutStatic.GetComponent<TextMeshProUGUI>().text += msg + "\n";
+    }
+
 }

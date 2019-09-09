@@ -10,101 +10,90 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
-using SimpleJSON;
+using System.Linq;
 using System.IO;
+using UnityEngine;
 using UnityEngine.SceneManagement;
+using SimpleJSON;
 
 public class CommandCenter : MonoBehaviour
 {
 
-    public class MuseumObject
-    {
-        public string id;
-        public Vector4 location;
-        public string type;
-        public string name;
-
-        public List<string> themes;
-        public List<string> exhibitions;
-        public Color32 color = new Color32(1, 1, 1, 1);
-
-        public List<string> exhibits;
-        public int navHierarchy;
-
-        public MuseumObject(JSONNode json)
-        {
-            id = json["indices"]["id"];
-            location = DatabaseLocationToVectorLocation(json["indices"]["locationIdentifier"]);
-            type = json["indices"]["type"];
-            name = json["description"]["name"];
-
-            switch (type)
-            {
-                case "exhibit":
-                    JSONNode curatorialInfo = json["curatorial"];
-                    themes = new List<string>();
-                    exhibitions = new List<string>();
-                    foreach (JSONNode theme in curatorialInfo["themes"].AsArray)
-                    {
-                        themes.Add(theme);
-                    }
-                    foreach (JSONNode exhibition in curatorialInfo["exhibitions"].AsArray)
-                    {
-                        exhibitions.Add(exhibition);
-                    }
-                    JSONArray color32 = curatorialInfo["colors"][0].AsArray;
-                    color = new Color32((byte)color32[0].AsInt, (byte)color32[1].AsInt, (byte)color32[2].AsInt, 255);
-                    break;
-                case "place":
-                    JSONNode relations = json["relations"];
-                    exhibits = new List<string>();
-                    foreach (JSONNode exhibit in relations["exhibits"].AsArray)
-                    {
-                        exhibits.Add(exhibit);
-                    }
-                    navHierarchy = relations["navigationalHierarchy"];
-                    break;
-            }
-        }
-    }
-
     private JSONObject museumCollectionJSON;
 
-    private GameObject museumSpace;
-    private GameObject arMuseumSpace;
+    private GameObject museumWorld;
     public Camera placeholderCam;
 
-    public static Vector4 currentLocation;
-    public static Dictionary<string, MuseumObject> museumObjects = new Dictionary<string, MuseumObject>();
+    public static Dictionary<string, MuseumObjectRep> museumObjects = new Dictionary<string, MuseumObjectRep>();
+    public static Dictionary<string, List<MuseumObjectRep>> museumThreads = new Dictionary<string, List<MuseumObjectRep>>();
 
-    public static float museumLength = 183.811f;
-    public static float museumWidth = 121.7801f;
+    public static List<string> currentZones = new List<string>();
+    public static string currentLocation = "";
+
+    public static Vector3 museumDimension = new Vector3(183.811f, 40f, 121.7801f);
 
     // Start is called before the first frame update
     void Start()
     {
         LoadMuseumCollection();
-        Debug.Log(museumCollectionJSON["items"]["1994.245.135"]["indices"]["provider"]);
+        //UnloadAllScenesExcept("Controller");
+        ARMapPreview();
 
-        currentLocation = new Vector4(0.2445209768f, 0, 0.4865384615f, 0);
-
-        UnloadAllScenesExcept("Controller");
+        Physics.IgnoreLayerCollision(10, 12);
     }
     private void LoadMuseumCollection()
     {
-        string filePath = Path.Combine(Application.streamingAssetsPath, "objects.json");
+        string filePath = Path.Combine(Application.streamingAssetsPath, "metadata.json");
         string jsonStr = File.ReadAllText(filePath);
         museumCollectionJSON = (JSONObject)JSON.Parse(jsonStr);
 
-        foreach (JSONNode item in museumCollectionJSON["exhibits"])
+        foreach (JSONNode item in museumCollectionJSON["objects"])
         {
-            museumObjects.Add(item["indices"]["id"], new MuseumObject(item));
+            museumObjects.Add(item["id"], new MuseumObjectRep(item));
         }
-        foreach (JSONNode item in museumCollectionJSON["places"])
+
+        foreach (MuseumObjectRep m in museumObjects.Values.Where(m => m.type == "place" || m.type == "space"))
         {
-            museumObjects.Add(item["indices"]["id"], new MuseumObject(item));
+            foreach (string c in m.relationship["children"].AsArray.Values)
+            {
+                museumObjects[c].room = m.id;
+            }
         }
+
+        museumThreads["Museum Navigation"] = new List<MuseumObjectRep>();
+        foreach (MuseumObjectRep m in museumObjects.Values.Where(m => m.type == "place"))
+        {
+            museumThreads["Museum Navigation"].Add(m);
+        }
+
+        foreach (MuseumObjectRep m in museumObjects.Values.Where(m => m.type == "exhibit"))
+        {
+            if (m.curatorial != null)
+            {
+                foreach (string theme in m.curatorial["themes"].AsArray.Values)
+                {
+                    if (!museumThreads.ContainsKey(theme)) museumThreads[theme] = new List<MuseumObjectRep>();
+                    museumThreads[theme].Add(m);
+                }
+                foreach (string theme in m.curatorial["exhibitions"].AsArray.Values)
+                {
+                    if (!museumThreads.ContainsKey(theme)) museumThreads[theme] = new List<MuseumObjectRep>();
+                    museumThreads[theme].Add(m);
+                }
+                foreach (string theme in m.curatorial["keywords"].AsArray.Values)
+                {
+                    if (!museumThreads.ContainsKey(theme)) museumThreads[theme] = new List<MuseumObjectRep>();
+                    museumThreads[theme].Add(m);
+                }
+                foreach (string theme in m.curatorial["classification"].AsArray.Values)
+                {
+                    if (!museumThreads.ContainsKey(theme)) museumThreads[theme] = new List<MuseumObjectRep>();
+                    museumThreads[theme].Add(m);
+                }
+            }
+        }
+
+        museumThreads["My Bookmarks"] = new List<MuseumObjectRep>();
     }
 
     private IEnumerator AddSceneAndSetActive(string scene)
@@ -115,11 +104,9 @@ public class CommandCenter : MonoBehaviour
     }
     private void UnloadAllScenesExcept(string sceneName)
     {
-        int c = SceneManager.sceneCount;
-        for (int i = 0; i < c; i++)
+        for (int i = 0; i < SceneManager.sceneCount; i++)
         {
             Scene scene = SceneManager.GetSceneAt(i);
-            print(scene.name);
             if (scene.name != sceneName && scene.name != "UnityARKitRemote")
             {
                 SceneManager.UnloadSceneAsync(scene);
@@ -127,23 +114,6 @@ public class CommandCenter : MonoBehaviour
         }
     }
 
-    // - Demonstration Controls
-    public void MapPreview()
-    {
-        if (!SceneManager.GetSceneByName("3DMapScene").isLoaded)
-        {
-            UnloadAllScenesExcept("Controller");
-            StartCoroutine("AddSceneAndSetActive", "3DMapScene");
-        }
-    }
-    public void MapLocalizationPreview()
-    {
-        if (!SceneManager.GetSceneByName("3DMapScene").isLoaded)
-        {
-            UnloadAllScenesExcept("Controller");
-            StartCoroutine("AddSceneAndSetActive", "3DMapScene");
-        }
-    }
     public void ARMapPreview()
     {
         UnloadAllScenesExcept("Controller");
@@ -154,34 +124,39 @@ public class CommandCenter : MonoBehaviour
     {
         UnloadAllScenesExcept("Controller");
         placeholderCam.enabled = true;
+        ARMapPreview();
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (!museumSpace)
+        currentZones = new List<string>();
+        foreach (MuseumObjectRep m in museumObjects.Values.Where(m => m.type == "space" || m.type == "place"))
         {
-            museumSpace = GameObject.Find("Museum");
+            if (m.GO)
+            {
+                if (m.GO.GetComponent<Positioning>().cameraIn)
+                {
+                    currentZones.Add(m.id);
+                } else
+                {
+                    currentZones.Remove(m.id);
+                }
+            }
         }
-        if (!arMuseumSpace)
+        if (!currentZones.Contains(currentLocation)) currentLocation = "";
+        foreach (string zoneId in currentZones)
         {
-            museumSpace = GameObject.Find("ARMuseum");
+            if (string.Compare(zoneId, currentLocation) > 0)
+            {
+                currentLocation = zoneId;
+            }
         }
-
     }
 
     // Helpers
-    public static void ChangeColor(GameObject GO, Color col)
+    internal static Vector3 DenormalizedMuseumVectors(Vector3 pos, bool moveAnchor = false)
     {
-        MaterialPropertyBlock propBlock = new MaterialPropertyBlock();
-        Renderer renderer = GO.GetComponent<Renderer>();
-        renderer.GetPropertyBlock(propBlock);
-        propBlock.SetColor("_Color", col);
-        renderer.SetPropertyBlock(propBlock);
-    }
-    public static Vector4 DatabaseLocationToVectorLocation(JSONNode jsonLocation)
-    {
-        JSONArray locationIdentifier = jsonLocation.AsArray;
-        return new Vector4(locationIdentifier[4] - 0.5f, locationIdentifier[0] / 100, -(locationIdentifier[5] - 0.5f), locationIdentifier[0]);
+        return moveAnchor ? Vector3.Scale(pos - new Vector3(.5f, .5f, -.5f), museumDimension) : Vector3.Scale(pos, museumDimension);
     }
 }
